@@ -7,14 +7,11 @@ const cors = require('cors');
 const { nanoid } = require('nanoid');
 const Anthropic = require('@anthropic-ai/sdk');
 
-// --- THE DEFINITIVE FIX IS HERE ---
 // Only *call* .config() in development
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
-// --- END OF FIX ---
 
-// The rest of the server code is correct.
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +35,7 @@ const broadcastGameState = (roomId, room) => {
 io.on('connection', (socket) => {
     console.log(`A user connected: ${socket.id}`);
 
+    // The create_room listener that was likely missing
     socket.on('create_room', (callback) => {
         const roomId = nanoid(8);
         rooms.set(roomId, {
@@ -72,32 +70,29 @@ io.on('connection', (socket) => {
         if (!room) return;
         const currentUser = room.users[room.currentUserIndex];
         if (currentUser.id !== socket.id) return;
-    
+
         room.promptInProgress = updatedPrompt;
         const isFinalTurn = (room.currentUserIndex + 1) >= room.users.length;
         
         if (isFinalTurn) {
             room.isLoading = true;
             room.messages.push({ sender: 'prompt', text: room.promptInProgress });
-            broadcastGameState(roomId, room); // Show prompt and loading state immediately
+            broadcastGameState(roomId, room);
             
-            // --- NEW: Variable to assemble the full response ---
             let fullResponseText = "";
-            const messageId = nanoid(); // We still need this for the stream
-    
+            const messageId = nanoid();
+
             try {
                 const stream = anthropic.messages.stream({
                     model: "claude-3-haiku-20240307",
                     max_tokens: 1024,
                     messages: [{ role: 'user', content: room.promptInProgress }],
                 });
-    
                 io.to(roomId).emit('ai_stream_start', { sender: 'claude', messageId });
-    
                 for await (const chunk of stream) {
                     if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
                         const textChunk = chunk.delta.text;
-                        fullResponseText += textChunk; // --- NEW: Assemble the full text on the server ---
+                        fullResponseText += textChunk;
                         io.to(roomId).emit('ai_stream_chunk', { text: textChunk, messageId });
                     }
                 }
@@ -107,22 +102,15 @@ io.on('connection', (socket) => {
             }
             
             io.to(roomId).emit('ai_stream_end');
-    
-            // --- NEW: Save the complete message to the server's history ---
             if (fullResponseText) {
                 room.messages.push({ sender: 'claude', text: fullResponseText, id: messageId });
             }
-    
-            // Now, reset the room state for the next turn
+            
             room.promptInProgress = "";
             room.isLoading = false;
-            room.currentUserIndex = 0; // Reset turn to the host
-            
-            // Broadcast the final, complete state with the new Claude message included
-            broadcastGameState(roomId, room); 
-    
+            room.currentUserIndex = 0;
+            broadcastGameState(roomId, room);
         } else {
-            // If it's not the final turn, just advance the turn and broadcast
             room.currentUserIndex++;
             broadcastGameState(roomId, room);
         }
@@ -139,9 +127,12 @@ io.on('connection', (socket) => {
             }
             const userIndex = room.users.findIndex(u => u.id === socket.id);
             if (userIndex !== -1) {
+                const wasMyTurn = room.currentUserIndex === userIndex;
                 room.users.splice(userIndex, 1);
-                if (room.users.length > 0 && room.currentUserIndex >= userIndex) {
+                if (room.users.length > 0 && wasMyTurn) {
                     room.currentUserIndex = room.currentUserIndex % room.users.length;
+                } else if (room.users.length > 0 && room.currentUserIndex > userIndex) {
+                    room.currentUserIndex--;
                 }
                 broadcastGameState(roomId, room);
                 return;
