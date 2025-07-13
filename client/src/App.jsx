@@ -4,7 +4,8 @@ import io from 'socket.io-client';
 import HomePage from './components/HomePage';
 import RoomPage from './components/RoomPage';
 
-const socket = io('http://localhost:3001');
+const socket = io(import.meta.env.VITE_SERVER_URL);
+
 
 function App() {
   return (
