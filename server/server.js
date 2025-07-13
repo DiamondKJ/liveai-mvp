@@ -1,5 +1,7 @@
-require('dotenv').config();
-const express = require('express');
+// Only load .env file in development, not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+  }const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors =require('cors');
