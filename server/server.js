@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
         if (!room) return;
         const currentUser = room.users[room.currentUserIndex];
         if (currentUser.id !== socket.id) return;
-
+    
         room.promptInProgress = updatedPrompt;
         const isFinalTurn = (room.currentUserIndex + 1) >= room.users.length;
         
@@ -81,13 +81,31 @@ io.on('connection', (socket) => {
             
             let fullResponseText = "";
             const messageId = nanoid();
-
+    
+            // --- NEW MEMORY LOGIC STARTS HERE ---
+            // 1. Define how many previous messages to include for context.
+            const MEMORY_LIMIT = 4; // Let's remember the last 4 messages.
+            const recentHistory = room.messages.slice(-MEMORY_LIMIT);
+    
+            // 2. Format the history for the Anthropic API.
+            const apiMessages = recentHistory.map(msg => {
+                if (msg.sender === 'claude') {
+                    return { role: 'assistant', content: msg.text };
+                }
+                // Treat both 'prompt' and 'system' messages as user input for context
+                return { role: 'user', content: msg.text };
+            });
+            // Note: The final prompt is already included in the history as the last message.
+            // --- END OF NEW MEMORY LOGIC ---
+    
             try {
                 const stream = anthropic.messages.stream({
                     model: "claude-3-haiku-20240307",
                     max_tokens: 1024,
-                    messages: [{ role: 'user', content: room.promptInProgress }],
+                    // 3. Pass the formatted message history to the API.
+                    messages: apiMessages,
                 });
+    
                 io.to(roomId).emit('ai_stream_start', { sender: 'claude', messageId });
                 for await (const chunk of stream) {
                     if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
@@ -103,6 +121,7 @@ io.on('connection', (socket) => {
             
             io.to(roomId).emit('ai_stream_end');
             if (fullResponseText) {
+                // We save the full response back to our history for the *next* turn.
                 room.messages.push({ sender: 'claude', text: fullResponseText, id: messageId });
             }
             
@@ -115,6 +134,7 @@ io.on('connection', (socket) => {
             broadcastGameState(roomId, room);
         }
     });
+    
 
     socket.on('disconnect', () => {
         console.log(`User ${socket.id} disconnected`);
