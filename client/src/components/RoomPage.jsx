@@ -5,9 +5,9 @@ function RoomPage({ socket }) {
     const { roomId } = useParams();
     const navigate = useNavigate();
     
-    // --- All component state is declared here ---
     const [input, setInput] = useState('');
     const [isRoomClosed, setIsRoomClosed] = useState(false);
+    
     const [gameState, setGameState] = useState({
         users: [],
         currentUserIndex: -1,
@@ -18,16 +18,19 @@ function RoomPage({ socket }) {
     
     const messagesEndRef = useRef(null);
     
-    // Derived state for easier access in the JSX
     const { users, currentUserIndex, promptInProgress, messages, isLoading } = gameState;
     const activeUser = users[currentUserIndex];
     const isMyTurn = activeUser && activeUser.id === socket.id;
 
-    // --- All useEffect hooks are grouped here ---
-
-    // Effect for joining the room and setting up all socket listeners
     useEffect(() => {
-        // --- Event Handlers ---
+        if (isMyTurn) setInput(promptInProgress);
+    }, [isMyTurn, promptInProgress]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isLoading]);
+
+    useEffect(() => {
         const handleStateUpdate = (newState) => setGameState(newState);
         const handleRoomClosed = (data) => {
             alert(data.message);
@@ -52,14 +55,12 @@ function RoomPage({ socket }) {
             setGameState(prev => ({ ...prev, isLoading: false }));
         };
 
-        // --- Setup Listeners ---
         socket.on('update_game_state', handleStateUpdate);
         socket.on('room_closed', handleRoomClosed);
         socket.on('ai_stream_start', handleStreamStart);
         socket.on('ai_stream_chunk', handleStreamChunk);
         socket.on('ai_stream_end', handleStreamEnd);
 
-        // --- Join the room ---
         socket.emit('join_room', { roomId }, (response) => {
             if (response.status !== 'ok') {
                 alert(response.message);
@@ -67,7 +68,6 @@ function RoomPage({ socket }) {
             }
         });
 
-        // --- Cleanup all listeners on unmount ---
         return () => {
             socket.off('update_game_state', handleStateUpdate);
             socket.off('room_closed', handleRoomClosed);
@@ -77,19 +77,6 @@ function RoomPage({ socket }) {
         };
     }, [roomId, socket, navigate]);
 
-    // Effect for automatically filling the textarea when it becomes your turn
-    useEffect(() => {
-        if (isMyTurn) {
-            setInput(promptInProgress);
-        }
-    }, [isMyTurn, promptInProgress]);
-
-    // Effect for scrolling to the bottom of the chat
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, isLoading]);
-
-    // --- All user action handlers are grouped here ---
     const submitForm = () => {
         if (isMyTurn && !isLoading) {
             socket.emit('submit_contribution', { roomId, updatedPrompt: input });
@@ -108,8 +95,7 @@ function RoomPage({ socket }) {
             submitForm();
         }
     };
-
-    // --- Render logic ---
+    
     if (isRoomClosed) {
         return (
             <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4 font-mono">
@@ -122,10 +108,11 @@ function RoomPage({ socket }) {
         );
     }
     
-    // Main component render
     return (
+        // Main container: flex column, fills screen height, has padding
         <div className="bg-gray-900 text-white min-h-screen flex flex-col md:flex-row p-4 gap-4 font-mono">
-            <aside className="w-full md:w-1/4 bg-gray-800 p-4 rounded-lg flex-shrink-0">
+            {/* Left sidebar: fixed width, bg-gray, scrollable if content overflows (unlikely for this section) */}
+            <aside className="w-full md:w-1/4 bg-gray-800 p-4 rounded-lg flex-shrink-0 md:h-[calc(100vh-2rem)] md:overflow-y-auto">
                 <h2 className="text-xl font-bold mb-4">Participants</h2>
                 <ul className="space-y-2">
                     {users.map((user, index) => (
@@ -139,7 +126,23 @@ function RoomPage({ socket }) {
                     <p className="text-2xl font-bold text-purple-400">{activeUser ? `${activeUser.name}'s Turn` : '...'}</p>
                 </div>
             </aside>
-            <div className="flex-1 flex flex-col gap-4">
+
+            {/* Right main content area: flexible width, flex column */}
+            <div className="flex-1 flex flex-col gap-4 min-h-0"> {/* min-h-0 is crucial for flex-1 children */}
+                {/* Header: fixed at top */}
+                <header className="flex justify-between items-center bg-gray-800 p-4 rounded-lg flex-shrink-0">
+                    <h1 className="text-xl md:text-2xl font-bold">Room: <span className="text-purple-400">{roomId}</span></h1>
+                    {/* Placeholder for Copy Invite Link button - moved it here for fixed header */}
+                    <button 
+                        // Implement handleCopyLink and copied state if you want this button here
+                        onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }}
+                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200"
+                    >
+                        Copy Invite Link
+                    </button>
+                </header>
+
+                {/* Main chat display area: occupies remaining space, and IS SCROLLABLE */}
                 <main className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto space-y-4">
                      {messages.map((msg, index) => (
                         <div key={msg.id || index}>
@@ -155,7 +158,9 @@ function RoomPage({ socket }) {
                      )}
                      <div ref={messagesEndRef} />
                 </main>
-                <footer className="mt-auto">
+
+                {/* Footer/Input area: fixed at bottom */}
+                <footer className="mt-auto flex-shrink-0">
                     <form onSubmit={handleSubmit} className="flex flex-col">
                         <textarea
                             value={input}
