@@ -109,10 +109,10 @@ function RoomPage({ socket }) {
     }
     
     return (
-        // Main container: flex column, fills screen height, has padding
-        <div className="bg-gray-900 text-white min-h-screen flex flex-col md:flex-row p-4 gap-4 font-mono">
-            {/* Left sidebar: fixed width, bg-gray, scrollable if content overflows (unlikely for this section) */}
-            <aside className="w-full md:w-1/4 bg-gray-800 p-4 rounded-lg flex-shrink-0 md:h-[calc(100vh-2rem)] md:overflow-y-auto">
+        // Main container: MUST fill screen height (h-screen) to allow flex children to calculate heights
+        <div className="bg-gray-900 text-white h-screen flex flex-col md:flex-row p-4 gap-4 font-mono">
+            {/* Left sidebar: fixed width, occupies full height of its parent, can scroll its own content */}
+            <aside className="w-full md:w-1/4 bg-gray-800 p-4 rounded-lg flex-shrink-0 h-full overflow-y-auto">
                 <h2 className="text-xl font-bold mb-4">Participants</h2>
                 <ul className="space-y-2">
                     {users.map((user, index) => (
@@ -127,14 +127,12 @@ function RoomPage({ socket }) {
                 </div>
             </aside>
 
-            {/* Right main content area: flexible width, flex column */}
-            <div className="flex-1 flex flex-col gap-4 min-h-0"> {/* min-h-0 is crucial for flex-1 children */}
-                {/* Header: fixed at top */}
+            {/* Right main content area: flexible width, flex column, takes remaining height */}
+            <div className="flex-1 flex flex-col gap-4 h-full"> 
+                {/* Header: fixed at top of this flex column, does not shrink */}
                 <header className="flex justify-between items-center bg-gray-800 p-4 rounded-lg flex-shrink-0">
                     <h1 className="text-xl md:text-2xl font-bold">Room: <span className="text-purple-400">{roomId}</span></h1>
-                    {/* Placeholder for Copy Invite Link button - moved it here for fixed header */}
                     <button 
-                        // Implement handleCopyLink and copied state if you want this button here
                         onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }}
                         className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200"
                     >
@@ -142,8 +140,8 @@ function RoomPage({ socket }) {
                     </button>
                 </header>
 
-                {/* Main chat display area: occupies remaining space, and IS SCROLLABLE */}
-                <main className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto space-y-4">
+                {/* Main chat display area: takes all *remaining* vertical space, and IS SCROLLABLE */}
+                <main className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto space-y-4 min-h-0"> {/* min-h-0 is crucial for flex-1 children */}
                      {messages.map((msg, index) => (
                         <div key={msg.id || index}>
                             <p className={`font-bold ${msg.sender === 'claude' ? 'text-blue-400' : 'text-purple-400'}`}>{msg.sender === 'prompt' ? 'Final Prompt to Claude' : 'Claude:'}</p>
@@ -159,7 +157,7 @@ function RoomPage({ socket }) {
                      <div ref={messagesEndRef} />
                 </main>
 
-                {/* Footer/Input area: fixed at bottom */}
+                {/* Footer/Input area: fixed at bottom of this flex column, does not shrink */}
                 <footer className="mt-auto flex-shrink-0">
                     <form onSubmit={handleSubmit} className="flex flex-col">
                         <textarea
