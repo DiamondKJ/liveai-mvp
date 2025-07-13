@@ -72,26 +72,33 @@ io.on('connection', (socket) => {
         if (!room) return;
         const currentUser = room.users[room.currentUserIndex];
         if (currentUser.id !== socket.id) return;
-
+    
         room.promptInProgress = updatedPrompt;
         const isFinalTurn = (room.currentUserIndex + 1) >= room.users.length;
         
         if (isFinalTurn) {
             room.isLoading = true;
-            broadcastGameState(roomId, room);
             room.messages.push({ sender: 'prompt', text: room.promptInProgress });
+            broadcastGameState(roomId, room); // Show prompt and loading state immediately
             
+            // --- NEW: Variable to assemble the full response ---
+            let fullResponseText = "";
+            const messageId = nanoid(); // We still need this for the stream
+    
             try {
                 const stream = anthropic.messages.stream({
                     model: "claude-3-haiku-20240307",
                     max_tokens: 1024,
                     messages: [{ role: 'user', content: room.promptInProgress }],
                 });
-                const messageId = nanoid();
+    
                 io.to(roomId).emit('ai_stream_start', { sender: 'claude', messageId });
+    
                 for await (const chunk of stream) {
                     if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                        io.to(roomId).emit('ai_stream_chunk', { text: chunk.delta.text, messageId });
+                        const textChunk = chunk.delta.text;
+                        fullResponseText += textChunk; // --- NEW: Assemble the full text on the server ---
+                        io.to(roomId).emit('ai_stream_chunk', { text: textChunk, messageId });
                     }
                 }
             } catch (error) {
@@ -100,11 +107,22 @@ io.on('connection', (socket) => {
             }
             
             io.to(roomId).emit('ai_stream_end');
+    
+            // --- NEW: Save the complete message to the server's history ---
+            if (fullResponseText) {
+                room.messages.push({ sender: 'claude', text: fullResponseText, id: messageId });
+            }
+    
+            // Now, reset the room state for the next turn
             room.promptInProgress = "";
             room.isLoading = false;
             room.currentUserIndex = 0; // Reset turn to the host
-            broadcastGameState(roomId, room); // Broadcast the final state
+            
+            // Broadcast the final, complete state with the new Claude message included
+            broadcastGameState(roomId, room); 
+    
         } else {
+            // If it's not the final turn, just advance the turn and broadcast
             room.currentUserIndex++;
             broadcastGameState(roomId, room);
         }
