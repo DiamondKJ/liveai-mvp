@@ -1,0 +1,284 @@
+/* Help Modal Overlay */
+.help-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(8px);
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 1;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+    }
+}
+
+/* Help Modal Content */
+.help-modal-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border-radius: 20px;
+    padding: 0;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Simple Entry Animation */
+.help-modal-enter {
+    animation: modalEnter 0.2s ease-out;
+}
+
+@keyframes modalEnter {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Simple Exit Animation */
+.help-modal-exit {
+    animation: modalExit 0.2s ease-in;
+}
+
+@keyframes modalExit {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Close Button */
+.help-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.help-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Header */
+.help-modal-header {
+    text-align: center;
+    padding: 40px 30px 20px;
+    color: white;
+}
+
+.help-modal-icon {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: iconFloat 2s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.help-modal-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.help-modal-header p {
+    margin: 0;
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+/* Body */
+.help-modal-body {
+    padding: 0 30px 20px;
+    color: white;
+}
+
+.help-section {
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    animation: sectionSlideIn 0.8s ease-out;
+    animation-fill-mode: both;
+}
+
+.help-section:nth-child(1) { animation-delay: 0.2s; }
+.help-section:nth-child(2) { animation-delay: 0.4s; }
+.help-section:nth-child(3) { animation-delay: 0.6s; }
+.help-section:nth-child(4) { animation-delay: 0.8s; }
+
+@keyframes sectionSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.help-section h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.3em;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.help-section ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.help-section li {
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 10px;
+    line-height: 1.5;
+}
+
+.help-section li:before {
+    content: "→";
+    position: absolute;
+    left: -10px;
+    color: #64b5f6;
+    font-weight: bold;
+}
+
+.help-section code {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #64b5f6;
+    border: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.help-section strong {
+    color: #64b5f6;
+}
+
+/* Footer */
+.help-modal-footer {
+    padding: 20px 30px 30px;
+    text-align: center;
+}
+
+.help-modal-button {
+    background: linear-gradient(45deg, #64b5f6, #42a5f5);
+    color: #000;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(100, 181, 246, 0.3);
+}
+
+.help-modal-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(100, 181, 246, 0.4);
+}
+
+.help-modal-button:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .help-modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .help-modal-header {
+        padding: 30px 20px 15px;
+    }
+    
+    .help-modal-header h2 {
+        font-size: 2em;
+    }
+    
+    .help-modal-body {
+        padding: 0 20px 15px;
+    }
+    
+    .help-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .help-modal-footer {
+        padding: 15px 20px 20px;
+    }
+}
+
+/* Scrollbar Styling */
+.help-modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.help-modal-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.help-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.help-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}

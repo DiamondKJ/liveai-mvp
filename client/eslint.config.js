@@ -1,29 +1,27 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import { defineConfig, globalIgnores } from 'eslint/config'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{js,jsx}'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        ecmaFeatures: { jsx: true },
-        sourceType: 'module',
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'chatgpt-sidebar': '#202123',
+        'chatgpt-main-bg': '#343541',
+        'chatgpt-message-ai': '#444654', // Background for AI messages
+        'chatgpt-input-bg': '#40414F',
+        'chatgpt-input-border': '#40414F', // Often same as input bg
+        'chatgpt-user-bubble': '#3B82F6', // Blue for user messages
+        'chatgpt-text-primary': '#ECECEC', // General text color
+        'chatgpt-text-secondary': '#A0A0A0', // Lighter text for secondary info
+        'chatgpt-accent-blue': '#10A37F', // ChatGPT's main green-ish accent (for new chat, etc.) - we'll keep blue for buttons for now as per your prior request.
+        'chatgpt-hover-gray': '#2A2B32', // Used for sidebar hover states
       },
-    },
-    rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'], // Define custom font family
+      }
     },
   },
-])
+  plugins: [],
+}
