@@ -6,6 +6,7 @@ import RoomPage from './components/RoomPage';
 
 const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:4000');
 
+// Force redeploy
 function App() {
   useEffect(() => {
     socket.on('connect', () => console.log('CLIENT: Socket connected successfully! ID:', socket.id));
