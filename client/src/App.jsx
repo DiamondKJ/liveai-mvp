@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import io from 'socket.io-client';
 import HomePage from './components/HomePage';
 import RoomPage from './components/RoomPage';
@@ -27,6 +28,7 @@ function App() {
         {/* The RoomPage is where the actual chat happens */}
         <Route path="/room/:roomCode" element={<RoomPage socket={socket} />} />
       </Routes>
+      <Analytics />
     </Router>
   );
 }
