@@ -961,9 +961,9 @@ const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
-    // Constants for image validation
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
-    const MAX_IMAGES = 5; // Maximum 5 images per message
+    // Constants for image validation - reduced to prevent socket disconnection
+    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB limit (reduced from 5MB)
+    const MAX_IMAGES = 3; // Maximum 3 images per message (reduced from 5)
     
     // Check if adding these images would exceed the limit
     if (selectedImages.length + imageFiles.length > MAX_IMAGES) {
@@ -998,30 +998,74 @@ const handleImageUpload = (e) => {
             try {
                 const base64 = event.target.result;
                 
-                // Additional validation for base64 size
-                const base64Size = base64.length * 0.75; // Approximate decoded size
-                if (base64Size > MAX_FILE_SIZE) {
-                    console.error('🔴 [IMAGE_UPLOAD] Base64 too large:', {
+                // Compress image to reduce socket payload
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Calculate new dimensions (max 800px width/height)
+                    const MAX_DIMENSION = 800;
+                    let { width, height } = img;
+                    
+                    if (width > height) {
+                        if (width > MAX_DIMENSION) {
+                            height = (height * MAX_DIMENSION) / width;
+                            width = MAX_DIMENSION;
+                        }
+                    } else {
+                        if (height > MAX_DIMENSION) {
+                            width = (width * MAX_DIMENSION) / height;
+                            height = MAX_DIMENSION;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+                    
+                    // Validate compressed size
+                    const compressedSize = compressedBase64.length * 0.75;
+                    if (compressedSize > MAX_FILE_SIZE) {
+                        console.error('🔴 [IMAGE_UPLOAD] Compressed image still too large:', {
+                            fileName: file.name,
+                            originalSize: file.size,
+                            compressedSize: compressedSize,
+                            compressedSizeMB: (compressedSize / (1024 * 1024)).toFixed(2)
+                        });
+                        alert(`Image "${file.name}" is too large even after compression. Please use a smaller image.`);
+                        return;
+                    }
+                    
+                    console.log('🟢 [IMAGE_UPLOAD] Image compressed successfully:', {
                         fileName: file.name,
-                        base64Size: base64Size,
-                        base64SizeMB: (base64Size / (1024 * 1024)).toFixed(2)
+                        originalSize: file.size,
+                        originalSizeMB: (file.size / (1024 * 1024)).toFixed(2),
+                        compressedSize: compressedSize,
+                        compressedSizeMB: (compressedSize / (1024 * 1024)).toFixed(2),
+                        compressionRatio: ((1 - compressedSize / file.size) * 100).toFixed(1) + '%',
+                        dimensions: `${width}x${height}`
                     });
-                    alert(`Image "${file.name}" is too large after processing. Please use a smaller image.`);
-                    return;
-                }
+                    
+                    setSelectedImages(prev => [...prev, {
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        base64: compressedBase64,
+                        size: compressedSize,
+                        originalSize: file.size,
+                        compressed: true
+                    }]);
+                };
                 
-                console.log('🟢 [IMAGE_UPLOAD] Image processed successfully:', {
-                    fileName: file.name,
-                    base64Length: base64.length,
-                    estimatedSizeMB: (base64Size / (1024 * 1024)).toFixed(2)
-                });
+                img.onerror = () => {
+                    console.error('🔴 [IMAGE_UPLOAD] Failed to load image for compression:', file.name);
+                    alert(`Failed to process image "${file.name}". Please try a different image.`);
+                };
                 
-                setSelectedImages(prev => [...prev, {
-                    id: Date.now() + Math.random(),
-                    name: file.name,
-                    base64,
-                    size: file.size
-                }]);
+                img.src = base64;
             } catch (error) {
                 console.error('🔴 [IMAGE_UPLOAD] Error processing image:', {
                     fileName: file.name,
