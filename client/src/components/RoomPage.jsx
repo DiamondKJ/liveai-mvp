@@ -1004,8 +1004,8 @@ const handleImageUpload = (e) => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // Calculate new dimensions (max 800px width/height)
-                    const MAX_DIMENSION = 800;
+                    // Calculate new dimensions (max 400px width/height for smaller payload)
+                    const MAX_DIMENSION = 400;
                     let { width, height } = img;
                     
                     if (width > height) {
@@ -1023,9 +1023,9 @@ const handleImageUpload = (e) => {
                     canvas.width = width;
                     canvas.height = height;
                     
-                    // Draw and compress
+                    // Draw and compress aggressively
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5); // 50% quality for smaller payload
                     
                     // Validate compressed size
                     const compressedSize = compressedBase64.length * 0.75;

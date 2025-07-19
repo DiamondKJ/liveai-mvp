@@ -29,15 +29,21 @@ function App() {
         // Filter out various debug objects and socket.io messages
         const argsStr = args.join(' ');
         
-        // Skip if contains debug patterns
+        // Skip if contains debug patterns - updated to match exact console output
         if (argsStr.includes('socket.io') || 
             argsStr.includes('Socket {') ||
             argsStr.includes('DEBUG: users') ||
-            argsStr.includes('GROUP CHAT DEBUG:') ||
-            argsStr.includes('AI RESPONSE DECISION:') ||
-            argsStr.includes('CONTEXTUAL MESSAGE RESULT:') ||
+            argsStr.includes('🔍 GROUP CHAT DEBUG:') ||
+            argsStr.includes('🎯 AI RESPONSE DECISION:') ||
+            argsStr.includes('🎯 FINAL AI RESPONSE DECISION:') ||
+            argsStr.includes('📥 Loading messages for referenced chat:') ||
+            argsStr.includes('🔄 Processing referenced chat:') ||
+            argsStr.includes('📋 CONTEXTUAL MESSAGE RESULT:') ||
+            argsStr.includes('🚀 SENDING AI MESSAGE:') ||
+            argsStr.includes('🚀 PARSE CONTEXTUAL MESSAGE START:') ||
             argsStr.includes('SENDING USER-TO-USER MESSAGE') ||
-            argsStr.includes('BLOCKING AI RESPONSE')) {
+            argsStr.includes('BLOCKING AI RESPONSE') ||
+            argsStr.includes('sers[0] Object')) {
           return; // Don't log debug messages
         }
         
