@@ -931,34 +931,126 @@ function RoomPage({ socket }) {
         }
         
         setShowMentionPopup(false);
-        setMentionQuery('');
-        textareaRef.current.focus();
-    };
-
-    const handleImageUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    }
+};
+    
+const handleMentionSelect = (chat) => {
+    if (chat.isAI || chat.id === 'claude-ai') {
+        // Claude mentions go to top pills only
+        if (!mentionedChats.find(c => c.id === chat.id)) {
+            setMentionedChats([...mentionedChats, chat]);
+        }
+        // Remove @mention from text
+        setInput(input.replace(/@\w*$|@$/, ''));
+    } else {
+        // Chat mentions go ONLY inline in text (not top pills)
+        const mentionText = `@${chat.chat_name || chat.name}`;
+        const newInput = input.replace(/@\w*$|@$/, mentionText + ' ');
+        setInput(newInput);
         
-        imageFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
+        // DO NOT add to mentionedChats - chat mentions stay inline only
+        // Backend will parse inline mentions from the text itself
+    }
+    
+    setShowMentionPopup(false);
+    setMentionQuery('');
+    textareaRef.current.focus();
+};
+
+const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // Constants for image validation
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+    const MAX_IMAGES = 5; // Maximum 5 images per message
+    
+    // Check if adding these images would exceed the limit
+    if (selectedImages.length + imageFiles.length > MAX_IMAGES) {
+        alert(`Maximum ${MAX_IMAGES} images allowed per message. You currently have ${selectedImages.length} images.`);
+        e.target.value = '';
+        return;
+    }
+    
+    imageFiles.forEach(file => {
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            console.error('🔴 [IMAGE_UPLOAD] File too large:', {
+                fileName: file.name,
+                fileSize: file.size,
+                maxSize: MAX_FILE_SIZE,
+                fileSizeMB: (file.size / (1024 * 1024)).toFixed(2)
+            });
+            alert(`Image "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Maximum size is 5MB.`);
+            return;
+        }
+        
+        console.log('🟡 [IMAGE_UPLOAD] Processing image:', {
+            fileName: file.name,
+            fileSize: file.size,
+            fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
+            fileType: file.type
+        });
+        
+        const reader = new FileReader();
+        
+        reader.onload = (event) => {
+            try {
                 const base64 = event.target.result;
+                
+                // Additional validation for base64 size
+                const base64Size = base64.length * 0.75; // Approximate decoded size
+                if (base64Size > MAX_FILE_SIZE) {
+                    console.error('🔴 [IMAGE_UPLOAD] Base64 too large:', {
+                        fileName: file.name,
+                        base64Size: base64Size,
+                        base64SizeMB: (base64Size / (1024 * 1024)).toFixed(2)
+                    });
+                    alert(`Image "${file.name}" is too large after processing. Please use a smaller image.`);
+                    return;
+                }
+                
+                console.log('🟢 [IMAGE_UPLOAD] Image processed successfully:', {
+                    fileName: file.name,
+                    base64Length: base64.length,
+                    estimatedSizeMB: (base64Size / (1024 * 1024)).toFixed(2)
+                });
+                
                 setSelectedImages(prev => [...prev, {
                     id: Date.now() + Math.random(),
                     name: file.name,
-                    base64
+                    base64,
+                    size: file.size
                 }]);
-            };
-            reader.readAsDataURL(file);
-        });
+            } catch (error) {
+                console.error('🔴 [IMAGE_UPLOAD] Error processing image:', {
+                    fileName: file.name,
+                    error: error.message,
+                    stack: error.stack
+                });
+                alert(`Error processing image "${file.name}": ${error.message}`);
+            }
+        };
         
-        // Clear the input so the same file can be selected again
-        e.target.value = '';
-    };
+        reader.onerror = (error) => {
+            console.error('🔴 [IMAGE_UPLOAD] FileReader error:', {
+                fileName: file.name,
+                error: error,
+                readyState: reader.readyState
+            });
+            alert(`Error reading image "${file.name}". Please try again.`);
+        };
+        
+        reader.readAsDataURL(file);
+    });
+    
+    // Clear the input so the same file can be selected again
+    e.target.value = '';
+};
 
-    const removeImage = (imageId) => {
-        setSelectedImages(prev => prev.filter(img => img.id !== imageId));
-    };
+const removeImage = (imageId) => {
+    setSelectedImages(prev => prev.filter(img => img.id !== imageId));
+};
 
     // --- RENDER LOGIC ---
     // If gameState is null, we always show the "Lobby" screen.
