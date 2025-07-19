@@ -22,44 +22,36 @@ function App() {
       console.error('🔴 TeamChat connection error:', error.message);
     });
     
-    // Override console logging to hide debug objects and socket spam
+    // AGGRESSIVE console filtering - block ALL debug output
     if (typeof window !== 'undefined') {
       const originalConsoleLog = console.log;
       console.log = (...args) => {
-        // Filter out various debug objects and socket.io messages
-        const argsStr = args.join(' ');
+        // Convert all args to string for pattern matching
+        const fullString = args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
         
-        // Skip if contains debug patterns - updated to match exact console output
-        if (argsStr.includes('socket.io') || 
-            argsStr.includes('Socket {') ||
-            argsStr.includes('DEBUG: users') ||
-            argsStr.includes('🔍 GROUP CHAT DEBUG:') ||
-            argsStr.includes('🎯 AI RESPONSE DECISION:') ||
-            argsStr.includes('🎯 FINAL AI RESPONSE DECISION:') ||
-            argsStr.includes('📥 Loading messages for referenced chat:') ||
-            argsStr.includes('🔄 Processing referenced chat:') ||
-            argsStr.includes('📋 CONTEXTUAL MESSAGE RESULT:') ||
-            argsStr.includes('🚀 SENDING AI MESSAGE:') ||
-            argsStr.includes('🚀 PARSE CONTEXTUAL MESSAGE START:') ||
-            argsStr.includes('SENDING USER-TO-USER MESSAGE') ||
-            argsStr.includes('BLOCKING AI RESPONSE') ||
-            argsStr.includes('sers[0] Object')) {
-          return; // Don't log debug messages
-        }
+        // Block ALL emoji debug patterns and common debug strings
+        const debugPatterns = [
+          'socket.io', 'Socket {', 'DEBUG:', 'users [', 'socket.id',
+          '🔍', '🎯', '📥', '🔄', '📋', '🚀', // All debug emojis
+          'GROUP CHAT DEBUG', 'AI RESPONSE DECISION', 'FINAL AI RESPONSE DECISION',
+          'Loading messages for referenced chat', 'Processing referenced chat',
+          'CONTEXTUAL MESSAGE RESULT', 'SENDING AI MESSAGE', 'PARSE CONTEXTUAL MESSAGE START',
+          'SENDING USER-TO-USER MESSAGE', 'BLOCKING AI RESPONSE',
+          'myUser {', 'users[0] {', 'sers[0] Object',
+          'room_id', 'socket_id', 'user_name', 'chat_type', 'activeChat_type',
+          'mentionedChats', 'messageText', 'will_trigger_ai'
+        ];
         
-        // Skip if any argument is an object with common debug properties
-        for (let arg of args) {
-          if (typeof arg === 'object' && arg !== null) {
-            // Skip socket objects
-            if (arg.id && arg.connected !== undefined) return;
-            // Skip debug objects with common patterns
-            if (arg.hasOwnProperty('socket_id') || 
-                arg.hasOwnProperty('room_id') ||
-                arg.hasOwnProperty('user_name') ||
-                arg.hasOwnProperty('chat_type')) return;
+        // Check if any debug pattern exists in the full string
+        for (const pattern of debugPatterns) {
+          if (fullString.includes(pattern)) {
+            return; // Block this log completely
           }
         }
         
+        // Only allow logs that don't match any debug patterns
         originalConsoleLog.apply(console, args);
       };
     }
