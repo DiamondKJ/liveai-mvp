@@ -1588,7 +1588,6 @@ const removeImage = (imageId) => {
             />
         </div>
     );
-    
 }
 
 export default RoomPage;
