@@ -22,17 +22,38 @@ function App() {
       console.error('🔴 TeamChat connection error:', error.message);
     });
     
-    // Override socket.io's default console logging
+    // Override console logging to hide debug objects and socket spam
     if (typeof window !== 'undefined') {
       const originalConsoleLog = console.log;
       console.log = (...args) => {
-        // Filter out socket.io debug messages and socket objects
+        // Filter out various debug objects and socket.io messages
         const argsStr = args.join(' ');
+        
+        // Skip if contains debug patterns
         if (argsStr.includes('socket.io') || 
             argsStr.includes('Socket {') ||
-            (args.length === 1 && typeof args[0] === 'object' && args[0]?.id && args[0]?.connected !== undefined)) {
-          return; // Don't log socket objects or socket.io debug messages
+            argsStr.includes('DEBUG: users') ||
+            argsStr.includes('GROUP CHAT DEBUG:') ||
+            argsStr.includes('AI RESPONSE DECISION:') ||
+            argsStr.includes('CONTEXTUAL MESSAGE RESULT:') ||
+            argsStr.includes('SENDING USER-TO-USER MESSAGE') ||
+            argsStr.includes('BLOCKING AI RESPONSE')) {
+          return; // Don't log debug messages
         }
+        
+        // Skip if any argument is an object with common debug properties
+        for (let arg of args) {
+          if (typeof arg === 'object' && arg !== null) {
+            // Skip socket objects
+            if (arg.id && arg.connected !== undefined) return;
+            // Skip debug objects with common patterns
+            if (arg.hasOwnProperty('socket_id') || 
+                arg.hasOwnProperty('room_id') ||
+                arg.hasOwnProperty('user_name') ||
+                arg.hasOwnProperty('chat_type')) return;
+          }
+        }
+        
         originalConsoleLog.apply(console, args);
       };
     }

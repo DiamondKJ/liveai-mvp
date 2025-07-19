@@ -33,7 +33,9 @@ const io = new Server(server, {
       process.env.CLIENT_URL
     ].filter(Boolean),
     credentials: true
-  }
+  },
+  // Increase buffer size to handle image uploads (default is 1MB)
+  maxHttpBufferSize: 5 * 1024 * 1024 // 5MB buffer
 });
 
 // --- Helper Functions ---

@@ -961,9 +961,9 @@ const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
-    // Constants for image validation - reduced to prevent socket disconnection
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB limit (reduced from 5MB)
-    const MAX_IMAGES = 3; // Maximum 3 images per message (reduced from 5)
+    // Constants for image validation - aggressively reduced to prevent socket disconnection
+    const MAX_FILE_SIZE = 500 * 1024; // 500KB limit (reduced from 1MB)
+    const MAX_IMAGES = 2; // Maximum 2 images per message (reduced from 3)
     
     // Check if adding these images would exceed the limit
     if (selectedImages.length + imageFiles.length > MAX_IMAGES) {
